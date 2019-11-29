@@ -1,0 +1,214 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Static website hosting with S3 and CloudFront
+Parameters:
+  DefaultRootObject:
+    Description: The default path for the index document.
+    Type: String
+    Default: index.html
+  ErrorPagePath:
+    Description: >-
+      The path of the error page for the website (e.g. /error.html). Must be a
+      root-relative path.
+    Type: String
+    Default: /404.html
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 5528740d-7b82-4601-b93e-343ebca93a8e
+    DependsOn:
+      - IAMRAD2M
+  ReadPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Statement:
+          - Action: 's3:GetObject'
+            Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${S3Bucket}/*'
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOriginAccessIdentity.S3CanonicalUserId
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1c93dc7c-21c5-4b09-8340-df825565fc0b
+  CloudFrontDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig:
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 404
+            ResponsePagePath: !Ref ErrorPagePath
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          Compress: true
+          DefaultTTL: 3600
+          ForwardedValues:
+            Cookies:
+              Forward: none
+            QueryString: false
+          MaxTTL: 86400
+          MinTTL: 60
+          TargetOriginId: s3origin
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: !Ref DefaultRootObject
+        Enabled: true
+        HttpVersion: http2
+        Origins:
+          - DomainName: !GetAtt S3Bucket.DomainName
+            Id: s3origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub >-
+                origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}
+        PriceClass: PriceClass_All
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 523d36c9-d65c-43b5-9fc8-9dd3b980a5b0
+  EC2Jenkins:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      NetworkInterfaces:
+        - SubnetId: !Ref EC2S1K49E
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 0749057f-87f2-4020-b7af-291853234494
+  EC2SG2G85I:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties: {}
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 9df2d153-7bd1-4291-aff5-e57ad4c38ada
+  EC2S1K49E:
+    Type: 'AWS::EC2::Subnet'
+    Properties: {}
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b5f72c62-8e76-4fdf-83ed-7ddf3f1d6290
+    DependsOn:
+      - ReadPolicy
+  IAMRAD2M:
+    Type: 'AWS::IAM::Role'
+    Properties: {}
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: bd089b3e-b880-4a42-81d6-e0d5c9dff849
+    DependsOn:
+      - EC2S1K49E
+Outputs:
+  BucketName:
+    Description: S3 Bucket Name
+    Value: !Ref S3Bucket
+  AccessKeyId:
+    Description: S3 Access Key
+    Value: !Ref PublishCredentials
+  AccessKeySecret:
+    Description: S3 Secret Key
+    Value: !GetAtt PublishCredentials.SecretAccessKey
+  DistributionId:
+    Description: CloudFront Distribution ID
+    Value: !Ref CloudFrontDistribution
+  Domain:
+    Description: Cloudfront Domain
+    Value: !GetAtt CloudFrontDistribution.DomainName
+Metadata:
+  'AWS::CloudFormation::Designer':
+    5528740d-7b82-4601-b93e-343ebca93a8e:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 100
+        'y': 210
+      z: 1
+      embeds: []
+      dependson:
+        - bd089b3e-b880-4a42-81d6-e0d5c9dff849
+    523d36c9-d65c-43b5-9fc8-9dd3b980a5b0:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 260
+        'y': 210
+      z: 1
+      embeds: []
+    1c93dc7c-21c5-4b09-8340-df825565fc0b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -70
+        'y': 210
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 5528740d-7b82-4601-b93e-343ebca93a8e
+    0749057f-87f2-4020-b7af-291853234494:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 50
+      z: 1
+      parent: b5f72c62-8e76-4fdf-83ed-7ddf3f1d6290
+      embeds: []
+      iscontainedinside:
+        - b5f72c62-8e76-4fdf-83ed-7ddf3f1d6290
+    9df2d153-7bd1-4291-aff5-e57ad4c38ada:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: -70
+        'y': 50
+      z: 0
+    b5f72c62-8e76-4fdf-83ed-7ddf3f1d6290:
+      size:
+        width: 140
+        height: 140
+      position:
+        x: 20
+        'y': 10
+      z: 0
+      embeds:
+        - 0749057f-87f2-4020-b7af-291853234494
+      dependson:
+        - 1c93dc7c-21c5-4b09-8340-df825565fc0b
+    0aa9f45b-cfd3-42ae-a16a-fafe3b067a6c:
+      source:
+        id: b5f72c62-8e76-4fdf-83ed-7ddf3f1d6290
+      target:
+        id: 1c93dc7c-21c5-4b09-8340-df825565fc0b
+      z: 2
+    bd089b3e-b880-4a42-81d6-e0d5c9dff849:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 212.8790545029899
+        'y': 58.7162569378729
+      z: 0
+      dependson:
+        - b5f72c62-8e76-4fdf-83ed-7ddf3f1d6290
+    c62daf50-3497-4786-8415-8b7264ca21e7:
+      source:
+        id: bd089b3e-b880-4a42-81d6-e0d5c9dff849
+      target:
+        id: b5f72c62-8e76-4fdf-83ed-7ddf3f1d6290
+      z: 3
+    98577615-2d10-45e8-bfc6-2e090288a1ab:
+      source:
+        id: 5528740d-7b82-4601-b93e-343ebca93a8e
+      target:
+        id: bd089b3e-b880-4a42-81d6-e0d5c9dff849
+      z: 4
